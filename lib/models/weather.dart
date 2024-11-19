@@ -1,5 +1,5 @@
+import 'package:esusu_weather_app/models/current.dart';
 import 'package:esusu_weather_app/models/daily.dart';
-import 'package:esusu_weather_app/models/hourly.dart';
 
 class Weather {
   final double latitude;
@@ -11,6 +11,8 @@ class Weather {
   final double elevation;
   final DailyUnits dailyUnits;
   final Daily daily;
+  final Current current;
+  final CurrentUnits currentUnits;
 
   Weather({
     required this.latitude,
@@ -22,6 +24,8 @@ class Weather {
     required this.elevation,
     required this.dailyUnits,
     required this.daily,
+    required this.current,
+    required this.currentUnits,
   });
 
   factory Weather.fromJson(Map<String, dynamic> data) {
@@ -35,6 +39,8 @@ class Weather {
       elevation: data['elevation'],
       dailyUnits: DailyUnits.fromJson(data['daily_units']),
       daily: Daily.fromJson(data['daily']),
+      current: Current.fromJson(data['current']),
+      currentUnits: CurrentUnits.fromJson(data['current_units']),
     );
   }
 
@@ -49,6 +55,8 @@ class Weather {
       'elevation': elevation,
       'daily_units': dailyUnits.toJson(),
       'daily': daily.toJson(),
+      'current': current.toJson(),
+      'current_units': currentUnits.toJson(),
     };
   }
 }
