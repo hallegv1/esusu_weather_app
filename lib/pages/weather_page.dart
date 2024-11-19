@@ -1,8 +1,10 @@
 import 'dart:ui';
 
 import 'package:esusu_weather_app/bloc/weather_bloc.dart';
+import 'package:esusu_weather_app/models/current.dart';
 import 'package:esusu_weather_app/models/daily.dart';
 import 'package:esusu_weather_app/models/weather.dart';
+import 'package:esusu_weather_app/models/weather_code.dart';
 import 'package:esusu_weather_app/repository/weather_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -108,18 +110,18 @@ class WeatherView extends StatefulWidget {
 class _WeatherViewState extends State<WeatherView> {
   String _formatDate({
     required String date,
-    bool showMonth = false,
+    required String format,
   }) {
     final dateTime = DateTime.parse(date).toLocal();
-    final format = showMonth ? 'MMMM dd yyyy' : 'EE dd';
     return DateFormat(format).format(dateTime);
   }
 
   String _formatDateTime({
     required String date,
+    required String format,
   }) {
     final dateTime = DateTime.parse(date).toLocal();
-    return DateFormat('h:mm a').format(dateTime);
+    return DateFormat(format).format(dateTime);
   }
 
   PreferredSizeWidget _appBar() => AppBar(
@@ -149,51 +151,111 @@ class _WeatherViewState extends State<WeatherView> {
         ),
       );
 
-  List<Widget> _gradientBackgroundItems() => [
-        _circleDecoration(
-          alignmentStart: 3,
-          alignmentY: -0.5,
-          circleColor: Colors.lightBlue,
+  List<Widget> _gradientBackgroundItems({
+    required int weatherCode,
+  }) {
+    final Color baseColor =
+        weatherCode < 3 ? Colors.lightBlue : Colors.blueGrey;
+    final Color accentColor = weatherCode < 3 ? Colors.yellow : Colors.grey;
+
+    return [
+      _circleDecoration(
+        alignmentStart: 3,
+        alignmentY: -0.5,
+        circleColor: baseColor,
+      ),
+      _circleDecoration(
+        alignmentStart: -3,
+        alignmentY: -0.5,
+        circleColor: baseColor,
+      ),
+      _circleDecoration(
+        alignmentStart: 0,
+        alignmentY: -5.5,
+        circleColor: accentColor,
+        circleSize: 600,
+      ),
+      BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+        child: Container(
+          decoration: const BoxDecoration(color: Colors.transparent),
         ),
-        _circleDecoration(
-          alignmentStart: -3,
-          alignmentY: -0.5,
-          circleColor: Colors.lightBlue,
+      ),
+    ];
+  }
+
+  Widget _weatherInfo({
+    required Daily daily,
+    required Current current,
+    required CurrentUnits units,
+  }) =>
+      SingleChildScrollView(
+        child: Column(
+          children: [
+            _currentInfo(current: current, units: units),
+            _dailyItemsList(daily: daily, temperatureUnit: units.temperature2m),
+          ],
         ),
-        _circleDecoration(
-          alignmentStart: 0,
-          alignmentY: -2.5,
-          circleColor: Colors.yellow,
-          circleSize: 600,
+      );
+
+  Widget _currentInfo({
+    required Current current,
+    required CurrentUnits units,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              "It's ${weatherDescriptionMap[current.weatherCode.toWeatherCode()]} today.",
+              style: const TextStyle(
+                fontSize: 30,
+                color: Colors.white,
+              ),
+            ),
+            Icon(
+              weatherIconMap[current.weatherCode.toWeatherCode()],
+              size: 80,
+              color: Colors.white,
+            ),
+            Text(
+              'Humidity is ${current.relativeHumidity2m}${units.relativeHumidity2m}.\nWind speed is ${current.windSpeed10m}${units.windSpeed10m}',
+              style: const TextStyle(
+                fontSize: 15,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              '${current.temperature2m.toString()} ${units.temperature2m}',
+              style: const TextStyle(
+                fontSize: 60,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
-          child: Container(
-            decoration: const BoxDecoration(color: Colors.transparent),
-          ),
-        ),
-      ];
+      );
 
   Widget _dailyItemsList({
     required Daily daily,
+    required String temperatureUnit,
   }) {
     int count = daily.time.length;
 
     return ListView.builder(
+      scrollDirection: Axis.vertical,
+      shrinkWrap: true,
       itemCount: count,
       itemBuilder: (context, index) {
         String time = daily.time[index];
         double tempMax = daily.temperature2mMax[index];
         double tempMin = daily.temperature2mMin[index];
-        String sunrise = daily.sunrise[index];
-        String sunset = daily.sunset[index];
-
         return _dailyItem(
           time: time,
           tempMax: tempMax,
           tempMin: tempMin,
-          sunrise: sunrise,
-          sunset: sunset,
+          temperatureUnit: temperatureUnit,
         );
       },
     );
@@ -203,17 +265,20 @@ class _WeatherViewState extends State<WeatherView> {
     required String time,
     required double tempMax,
     required double tempMin,
-    required String sunrise,
-    required String sunset,
+    required String temperatureUnit,
   }) =>
       Padding(
-        padding: const EdgeInsets.all(15),
-        child: Column(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              _formatDate(date: time),
+              _formatDate(
+                date: time,
+                format: 'EE d',
+              ),
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 40,
                 color: Colors.white,
               ),
             ),
@@ -223,15 +288,38 @@ class _WeatherViewState extends State<WeatherView> {
                 children: [
                   Column(
                     children: [
-                      Text('High: ${tempMax.toString()}'),
-                      Text('Low: ${tempMin.toString()}'),
-                    ],
-                  ),
-                  const Spacer(),
-                  Column(
-                    children: [
-                      Text('Sunrise: ${_formatDateTime(date: sunrise)}'),
-                      Text('Sunset: ${_formatDateTime(date: sunset)}'),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.arrow_upward,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                          Text(
+                            '$tempMax $temperatureUnit',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.arrow_downward,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                          Text(
+                            '$tempMin $temperatureUnit',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ],
@@ -247,23 +335,26 @@ class _WeatherViewState extends State<WeatherView> {
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 60),
         child: Text(
-          'Week of\n${_formatDate(
+          _formatDateTime(
             date: date,
-            showMonth: true,
-          )}',
+            format: 'MMMEd',
+          ),
           style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontSize: 25,
             color: Colors.white,
           ),
-          textAlign: TextAlign.center,
         ),
       );
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor =
+        widget.weather != null && widget.weather!.current.weatherCode > 2
+            ? Colors.blueGrey
+            : Colors.blue;
+
     return Scaffold(
-      backgroundColor: Colors.blue,
+      backgroundColor: backgroundColor,
       extendBody: true,
       appBar: _appBar(),
       body: Padding(
@@ -274,9 +365,15 @@ class _WeatherViewState extends State<WeatherView> {
           height: MediaQuery.of(context).size.height,
           child: Stack(
             children: [
-              ..._gradientBackgroundItems(),
+              ..._gradientBackgroundItems(
+                weatherCode: widget.weather?.current.weatherCode ?? 2,
+              ),
               if (widget.weather != null)
-                _dailyItemsList(daily: widget.weather!.daily),
+                _weatherInfo(
+                  daily: widget.weather!.daily,
+                  current: widget.weather!.current,
+                  units: widget.weather!.currentUnits,
+                ),
             ],
           ),
         ),
