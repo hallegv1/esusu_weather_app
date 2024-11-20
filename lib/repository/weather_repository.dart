@@ -1,24 +1,26 @@
 import 'dart:convert';
 import 'package:esusu_weather_app/endpoints.dart';
 import 'package:esusu_weather_app/models/weather.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
 abstract class WeatherRepository {
-  Future<Weather> fetchWeather();
-  Future<Position> getCurrentLocation();
+  Future<Weather> fetchWeather({
+    required double latitude,
+    required double longitude,
+  });
 }
 
 class OpenMeteoWeatherRepository implements WeatherRepository {
   OpenMeteoWeatherRepository();
 
   @override
-  Future<Weather> fetchWeather() async {
-    final location = await getCurrentLocation();
-
+  Future<Weather> fetchWeather({
+    required double latitude,
+    required double longitude,
+  }) async {
     final queryParameters = {
-      "latitude": location.latitude.toString(),
-      "longitude": location.longitude.toString(),
+      "latitude": latitude.toString(),
+      "longitude": longitude.toString(),
       "current": [
         "temperature_2m",
         "weather_code",
@@ -53,39 +55,5 @@ class OpenMeteoWeatherRepository implements WeatherRepository {
     } else {
       throw Exception(response.body);
     }
-  }
-
-  @override
-  Future<Position> getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-        'Location permissions are permanently denied, we cannot request permissions.',
-      );
-    }
-
-    const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 100,
-    );
-
-    return await Geolocator.getCurrentPosition(
-      locationSettings: locationSettings,
-    );
   }
 }

@@ -5,11 +5,14 @@ import 'package:esusu_weather_app/models/current.dart';
 import 'package:esusu_weather_app/models/daily.dart';
 import 'package:esusu_weather_app/models/weather.dart';
 import 'package:esusu_weather_app/models/weather_code.dart';
+import 'package:esusu_weather_app/repository/location_repository.dart';
 import 'package:esusu_weather_app/repository/weather_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:location_picker_text_field/classes.dart';
+import 'package:location_picker_text_field/open_street_location_picker.dart';
 
 class WeatherPage extends StatelessWidget {
   const WeatherPage({
@@ -20,10 +23,9 @@ class WeatherPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => WeatherBloc(
-        repository: context.read<WeatherRepository>(),
-      )..add(
-          const FetchWeather(),
-        ),
+        weatherRepository: context.read<WeatherRepository>(),
+        locationRepository: context.read<LocationRepository>(),
+      )..add(const FetchWeather()),
       child: WeatherPageListener(
         onFetchWeather: () {},
         onLoading: () {},
@@ -108,6 +110,10 @@ class WeatherView extends StatefulWidget {
 }
 
 class _WeatherViewState extends State<WeatherView> {
+  final TextEditingController _locationController = TextEditingController();
+
+  OSMdata? location;
+
   String _formatDate({
     required String date,
     required String format,
@@ -184,58 +190,75 @@ class _WeatherViewState extends State<WeatherView> {
     ];
   }
 
+  Widget _locationPicker() => Container(
+        width: MediaQuery.of(context).size.width,
+        padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+        child: LocationPicker(
+          label: "Enter a location",
+          controller: _locationController,
+          onSelect: (data) {
+            _locationController.text = data.displayname;
+
+            setState(() => location = data);
+          },
+        ),
+      );
+
   Widget _weatherInfo({
     required Daily daily,
     required Current current,
     required CurrentUnits units,
   }) =>
-      SingleChildScrollView(
-        child: Column(
-          children: [
-            _currentInfo(current: current, units: units),
-            _dailyItemsList(daily: daily, temperatureUnit: units.temperature2m),
-          ],
-        ),
+      Column(
+        children: [
+          _currentInfo(current: current, units: units),
+          _dailyItemsList(daily: daily, temperatureUnit: units.temperature2m),
+        ],
       );
 
   Widget _currentInfo({
     required Current current,
     required CurrentUnits units,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              "It's ${weatherDescriptionMap[current.weatherCode.toWeatherCode()]} today.",
-              style: const TextStyle(
-                fontSize: 30,
-                color: Colors.white,
-              ),
-            ),
-            Icon(
-              weatherIconMap[current.weatherCode.toWeatherCode()],
-              size: 80,
+  }) {
+    final splitLocation = location?.displayname.split(", ");
+    final locationName = "${splitLocation?.first}, ${splitLocation?[2]}";
+    final locationString = location != null ? "in $locationName" : "";
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            "It's ${weatherDescriptionMap[current.weatherCode.toWeatherCode()]} $locationString today.",
+            style: const TextStyle(
+              fontSize: 30,
               color: Colors.white,
             ),
-            Text(
-              'Humidity is ${current.relativeHumidity2m}${units.relativeHumidity2m}.\nWind speed is ${current.windSpeed10m}${units.windSpeed10m}',
-              style: const TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
+          ),
+          Icon(
+            weatherIconMap[current.weatherCode.toWeatherCode()],
+            size: 80,
+            color: Colors.white,
+          ),
+          Text(
+            '${current.temperature2m.toString()} ${units.temperature2m}',
+            style: const TextStyle(
+              fontSize: 60,
+              color: Colors.white,
             ),
-            Text(
-              '${current.temperature2m.toString()} ${units.temperature2m}',
-              style: const TextStyle(
-                fontSize: 60,
-                color: Colors.white,
-              ),
+          ),
+          Text(
+            'Humidity is ${current.relativeHumidity2m}${units.relativeHumidity2m}.\nWind speed is ${current.windSpeed10m}${units.windSpeed10m}',
+            style: const TextStyle(
+              fontSize: 15,
+              color: Colors.white,
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _dailyItemsList({
     required Daily daily,
@@ -347,6 +370,12 @@ class _WeatherViewState extends State<WeatherView> {
       );
 
   @override
+  initState() {
+    super.initState();
+    _locationController.text = "Los Angeles";
+  }
+
+  @override
   Widget build(BuildContext context) {
     final backgroundColor =
         widget.weather != null && widget.weather!.current.weatherCode > 2
@@ -369,10 +398,17 @@ class _WeatherViewState extends State<WeatherView> {
                 weatherCode: widget.weather?.current.weatherCode ?? 2,
               ),
               if (widget.weather != null)
-                _weatherInfo(
-                  daily: widget.weather!.daily,
-                  current: widget.weather!.current,
-                  units: widget.weather!.currentUnits,
+                SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _locationPicker(),
+                      _weatherInfo(
+                        daily: widget.weather!.daily,
+                        current: widget.weather!.current,
+                        units: widget.weather!.currentUnits,
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
