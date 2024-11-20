@@ -49,7 +49,6 @@ class OpenMeteoWeatherRepository implements WeatherRepository {
       Weather weather = Weather.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>,
       );
-      print(response.body);
 
       return weather;
     } else {
