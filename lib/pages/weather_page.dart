@@ -11,8 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:location_picker_text_field/classes.dart';
-import 'package:location_picker_text_field/open_street_location_picker.dart';
+import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
 
 class WeatherPage extends StatelessWidget {
   const WeatherPage({
@@ -110,9 +109,10 @@ class WeatherView extends StatefulWidget {
 }
 
 class _WeatherViewState extends State<WeatherView> {
-  final TextEditingController _locationController = TextEditingController();
-
-  OSMdata? location;
+  String? locationName;
+  double? latitude;
+  double? longitude;
+  bool showMap = false;
 
   String _formatDate({
     required String date,
@@ -137,6 +137,9 @@ class _WeatherViewState extends State<WeatherView> {
         title: widget.weather != null
             ? _title(date: widget.weather!.daily.time.first)
             : null,
+        actions: [
+          if (widget.weather != null) _showMapButton(),
+        ],
       );
 
   Widget _circleDecoration({
@@ -190,16 +193,52 @@ class _WeatherViewState extends State<WeatherView> {
     ];
   }
 
-  Widget _locationPicker() => Container(
-        width: MediaQuery.of(context).size.width,
-        padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
-        child: LocationPicker(
-          label: "Enter a location",
-          controller: _locationController,
-          onSelect: (data) {
-            _locationController.text = data.displayname;
+  Widget _showMapButton() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              showMap = !showMap;
+            });
+          },
+          child: Container(
+            alignment: Alignment.center,
+            width: 100,
+            height: 40,
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Colors.white54,
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+            ),
+            child: Text(showMap ? "Hide Map" : "Show Map"),
+          ),
+        ),
+      );
 
-            setState(() => location = data);
+  Widget _locationPicker() => SizedBox(
+        height: 300,
+        width: MediaQuery.of(context).size.width,
+        child: FlutterLocationPicker(
+          initZoom: 11,
+          minZoomLevel: 5,
+          maxZoomLevel: 16,
+          trackMyPosition: true,
+          initPosition: LatLong(
+            widget.weather!.latitude,
+            widget.weather!.longitude,
+          ),
+          onPicked: (pickedData) {
+            final addressData = pickedData.addressData;
+            setState(() {
+              final city = addressData["city"] ??
+                  addressData["town"] ??
+                  addressData["village"];
+              final state = addressData["state"];
+              locationName = '$city $state';
+
+              latitude = pickedData.latLong.latitude;
+              longitude = pickedData.latLong.longitude;
+            });
           },
         ),
       );
@@ -220,9 +259,7 @@ class _WeatherViewState extends State<WeatherView> {
     required Current current,
     required CurrentUnits units,
   }) {
-    final splitLocation = location?.displayname.split(", ");
-    final locationName = "${splitLocation?.first}, ${splitLocation?[2]}";
-    final locationString = location != null ? "in $locationName" : "";
+    final locationString = locationName != null ? " in $locationName" : "";
 
     return Padding(
       padding: const EdgeInsets.all(8),
@@ -230,7 +267,7 @@ class _WeatherViewState extends State<WeatherView> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            "It's ${weatherDescriptionMap[current.weatherCode.toWeatherCode()]} $locationString today.",
+            "It's ${weatherDescriptionMap[current.weatherCode.toWeatherCode()]}$locationString today.",
             style: const TextStyle(
               fontSize: 30,
               color: Colors.white,
@@ -370,12 +407,6 @@ class _WeatherViewState extends State<WeatherView> {
       );
 
   @override
-  initState() {
-    super.initState();
-    _locationController.text = "Los Angeles";
-  }
-
-  @override
   Widget build(BuildContext context) {
     final backgroundColor =
         widget.weather != null && widget.weather!.current.weatherCode > 2
@@ -401,7 +432,7 @@ class _WeatherViewState extends State<WeatherView> {
                 SingleChildScrollView(
                   child: Column(
                     children: [
-                      _locationPicker(),
+                      if (showMap) _locationPicker(),
                       _weatherInfo(
                         daily: widget.weather!.daily,
                         current: widget.weather!.current,
