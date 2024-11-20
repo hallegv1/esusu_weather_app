@@ -1,30 +1,61 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:bloc_test/bloc_test.dart';
+import 'package:esusu_weather_app/bloc/weather_bloc.dart';
+import 'package:esusu_weather_app/pages/weather_page.dart';
+import 'package:esusu_weather_app/repository/location_repository.dart';
+import 'package:esusu_weather_app/repository/weather_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
-import 'package:esusu_weather_app/main.dart';
+class MockWeatherRepository extends Mock implements WeatherRepository {}
+
+class MockLocationRepository extends Mock implements LocationRepository {}
+
+class MockWeatherBloc extends MockBloc<WeatherEvent, WeatherState>
+    implements WeatherBloc {}
 
 void main() {
-  // testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-  //   // Build our app and trigger a frame.
-  //   await tester.pumpWidget(const App());
+  group('WeatherView', () {
+    testWidgets('renders correctly', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: WeatherView(isLoading: false),
+        ),
+      );
 
-  //   // Verify that our counter starts at 0.
-  //   expect(find.text('0'), findsOneWidget);
-  //   expect(find.text('1'), findsNothing);
+      expect(find.byType(AppBar), findsOne);
+      expect(find.byType(Stack), findsWidgets);
+      expect(find.byType(Container), findsWidgets);
+    });
+  });
 
-  //   // Tap the '+' icon and trigger a frame.
-  //   await tester.tap(find.byIcon(Icons.add));
-  //   await tester.pump();
+  group('WeatherBlocListener', () {
+    late WeatherBloc weatherBloc;
 
-  //   // Verify that our counter has incremented.
-  //   expect(find.text('0'), findsNothing);
-  //   expect(find.text('1'), findsOneWidget);
-  // });
+    setUp(() {
+      weatherBloc = MockWeatherBloc();
+    });
+
+    testWidgets('Weather UI is hidden on [initial]', (tester) async {
+      when(
+        () => weatherBloc.state,
+      ).thenReturn(WeatherStateInitial());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(
+            value: weatherBloc,
+            child: const WeatherView(isLoading: true),
+          ),
+        ),
+      );
+
+      expect(find.text('Show Map'), findsNothing);
+      expect(find.text('Humidity is'), findsNothing);
+      expect(find.text('Wind speed is'), findsNothing);
+      expect(find.byKey(const Key("Current Info")), findsNothing);
+      expect(find.byKey(const Key("Weather Info")), findsNothing);
+    });
+  });
 }

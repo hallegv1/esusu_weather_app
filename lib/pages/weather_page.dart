@@ -26,9 +26,6 @@ class WeatherPage extends StatelessWidget {
         locationRepository: context.read<LocationRepository>(),
       )..add(const FetchWeather()),
       child: WeatherPageListener(
-        onFetchWeather: () {},
-        onLoading: () {},
-        onSuccess: () {},
         onFailure: () {},
         child: const WeatherPageBlocBuilder(),
       ),
@@ -38,17 +35,11 @@ class WeatherPage extends StatelessWidget {
 
 class WeatherPageListener extends StatelessWidget {
   final Widget child;
-  final void Function() onFetchWeather;
-  final void Function() onLoading;
-  final void Function() onSuccess;
   final void Function() onFailure;
 
   const WeatherPageListener({
     super.key,
     required this.child,
-    required this.onFetchWeather,
-    required this.onLoading,
-    required this.onSuccess,
     required this.onFailure,
   });
 
@@ -57,12 +48,6 @@ class WeatherPageListener extends StatelessWidget {
     return BlocListener<WeatherBloc, WeatherState>(
       listener: (context, state) {
         switch (state) {
-          case WeatherStateInitial():
-            onFetchWeather();
-          case WeatherStateLoading():
-            onLoading();
-          case WeatherStateSuccess():
-            onSuccess();
           case WeatherStateFailure():
             onFailure();
         }
@@ -83,13 +68,16 @@ class WeatherPageBlocBuilder extends StatelessWidget {
         if (state is WeatherStateInitial ||
             state is WeatherStateLoading ||
             state is WeatherStateFailure) {
-          return const WeatherView();
+          return WeatherView(
+            isLoading: state is WeatherStateLoading,
+          );
         } else if (state is WeatherStateSuccess) {
           return WeatherView(
+            isLoading: false,
             weather: state.weather,
           );
         } else {
-          return const WeatherView();
+          return const WeatherView(isLoading: false);
         }
       },
     );
@@ -98,10 +86,12 @@ class WeatherPageBlocBuilder extends StatelessWidget {
 
 class WeatherView extends StatefulWidget {
   final Weather? weather;
+  final bool isLoading;
 
   const WeatherView({
     super.key,
     this.weather,
+    required this.isLoading,
   });
 
   @override
@@ -249,6 +239,7 @@ class _WeatherViewState extends State<WeatherView> {
     required CurrentUnits units,
   }) =>
       Column(
+        key: const Key("Weather Info"),
         children: [
           _currentInfo(current: current, units: units),
           _dailyItemsList(daily: daily, temperatureUnit: units.temperature2m),
@@ -262,6 +253,7 @@ class _WeatherViewState extends State<WeatherView> {
     final locationString = locationName != null ? " in $locationName" : "";
 
     return Padding(
+      key: const Key("Current Info"),
       padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -428,6 +420,7 @@ class _WeatherViewState extends State<WeatherView> {
               ..._gradientBackgroundItems(
                 weatherCode: widget.weather?.current.weatherCode ?? 2,
               ),
+              if (widget.isLoading) const CircularProgressIndicator(),
               if (widget.weather != null)
                 SingleChildScrollView(
                   child: Column(

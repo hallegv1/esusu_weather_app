@@ -14,7 +14,7 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   WeatherBloc({
     required this.weatherRepository,
     required this.locationRepository,
-  }) : super(const WeatherState()) {
+  }) : super(WeatherStateInitial()) {
     on<FetchWeather>(_onFetchWeather);
   }
 
@@ -22,6 +22,8 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
     FetchWeather event,
     Emitter<WeatherState> emit,
   ) async {
+    emit(WeatherStateLoading());
+
     final currentLocation = await locationRepository.getCurrentLocation();
 
     double latitude = event.latitude ?? currentLocation.latitude;
