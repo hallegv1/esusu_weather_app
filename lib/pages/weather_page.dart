@@ -304,7 +304,7 @@ class _WeatherViewState extends State<WeatherView> {
     int count = daily.time.length;
 
     return ListView.builder(
-      scrollDirection: Axis.vertical,
+      physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       itemCount: count,
       itemBuilder: (context, index) {
