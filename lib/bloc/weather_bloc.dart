@@ -24,16 +24,20 @@ class WeatherBloc extends Bloc<WeatherEvent, WeatherState> {
   ) async {
     emit(WeatherStateLoading());
 
-    final currentLocation = await locationRepository.getCurrentLocation();
+    // try {
+    //   final currentLocation = await locationRepository.getCurrentLocation();
 
-    double latitude = event.latitude ?? currentLocation.latitude;
-    double longitude = event.longitude ?? currentLocation.longitude;
+    //   double latitude = event.latitude ?? currentLocation.latitude;
+    //   double longitude = event.longitude ?? currentLocation.longitude;
 
-    final weather = await weatherRepository.fetchWeather(
-      latitude: latitude,
-      longitude: longitude,
-    );
+    //   final weather = await weatherRepository.fetchWeather(
+    //     latitude: latitude,
+    //     longitude: longitude,
+    //   );
 
-    emit(WeatherStateSuccess(weather));
+    //   emit(WeatherStateSuccess(weather));
+    // } catch (_) {
+    emit(WeatherStateFailure());
+    // }
   }
 }

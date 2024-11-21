@@ -3,6 +3,7 @@ import 'package:esusu_weather_app/repository/location_repository.dart';
 import 'package:esusu_weather_app/repository/weather_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 void main() {
   final WeatherRepository weatherRepository = OpenMeteoWeatherRepository();
@@ -24,8 +25,10 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: WeatherPage(),
+    return const ToastificationWrapper(
+      child: MaterialApp(
+        home: WeatherPage(),
+      ),
     );
   }
 }

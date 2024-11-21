@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
+import 'package:toastification/toastification.dart';
 
 class WeatherPage extends StatelessWidget {
   const WeatherPage({
@@ -26,7 +27,18 @@ class WeatherPage extends StatelessWidget {
         locationRepository: context.read<LocationRepository>(),
       )..add(const FetchWeather()),
       child: WeatherPageListener(
-        onFailure: () {},
+        onFailure: () => toastification.show(
+          type: ToastificationType.error,
+          style: ToastificationStyle.fillColored,
+          autoCloseDuration: const Duration(seconds: 3),
+          title: const Text(
+            "Error fetching weather data.",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white,
+            ),
+          ),
+        ),
         child: const WeatherPageBlocBuilder(),
       ),
     );
