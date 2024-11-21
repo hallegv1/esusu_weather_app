@@ -150,12 +150,26 @@ class _WeatherViewState extends State<WeatherView> {
         ),
       );
 
+  Color _getBaseColor({
+    required int weatherCode,
+  }) {
+    if (weatherCode < 3) return Colors.lightBlue;
+    if (weatherCode >= 3 && weatherCode < 62) return Colors.blueGrey;
+    return Colors.black;
+  }
+
+  Color _getAccentColor({
+    required int weatherCode,
+  }) {
+    if (weatherCode < 3) return Colors.yellow;
+    return Colors.grey;
+  }
+
   List<Widget> _gradientBackgroundItems({
     required int weatherCode,
   }) {
-    final Color baseColor =
-        weatherCode < 3 ? Colors.lightBlue : Colors.blueGrey;
-    final Color accentColor = weatherCode < 3 ? Colors.yellow : Colors.grey;
+    final Color baseColor = _getBaseColor(weatherCode: weatherCode);
+    final Color accentColor = _getAccentColor(weatherCode: weatherCode);
 
     return [
       _circleDecoration(
@@ -220,11 +234,15 @@ class _WeatherViewState extends State<WeatherView> {
           onPicked: (pickedData) {
             final addressData = pickedData.addressData;
             setState(() {
-              final city = addressData["city"] ??
+              final locality = addressData["city"] ??
                   addressData["town"] ??
-                  addressData["village"];
-              final state = addressData["state"];
-              locationName = '$city $state';
+                  addressData["village"] ??
+                  addressData["province"] ??
+                  addressData["county"];
+
+              final region = addressData["state"] ?? addressData["country"];
+
+              locationName = '$locality, $region';
 
               latitude = pickedData.latLong.latitude;
               longitude = pickedData.latLong.longitude;
@@ -303,11 +321,14 @@ class _WeatherViewState extends State<WeatherView> {
         String time = daily.time[index];
         double tempMax = daily.temperature2mMax[index];
         double tempMin = daily.temperature2mMin[index];
+        int weatherCode = daily.weatherCode[index];
+
         return _dailyItem(
           time: time,
           tempMax: tempMax,
           tempMin: tempMin,
           temperatureUnit: temperatureUnit,
+          weatherCode: weatherCode,
         );
       },
     );
@@ -318,20 +339,46 @@ class _WeatherViewState extends State<WeatherView> {
     required double tempMax,
     required double tempMin,
     required String temperatureUnit,
+    required int weatherCode,
   }) =>
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              _formatDate(
-                date: time,
-                format: 'EE d',
-              ),
-              style: const TextStyle(
-                fontSize: 40,
-                color: Colors.white,
+            Icon(
+              weatherIconMap[weatherCode.toWeatherCode()],
+              size: 30,
+              color: Colors.white,
+            ),
+            SizedBox(
+              width: 120,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formatDate(
+                      date: time,
+                      format: 'EE d',
+                    ),
+                    style: const TextStyle(
+                      fontSize: 30,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (weatherDescriptionMap[weatherCode.toWeatherCode()] !=
+                      null)
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        weatherDescriptionMap[weatherCode.toWeatherCode()]!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             Padding(

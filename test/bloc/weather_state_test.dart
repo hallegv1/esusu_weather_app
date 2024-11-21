@@ -27,11 +27,13 @@ void main() {
             time: "20:00",
             temperature2mMax: "F",
             temperature2mMin: "F",
+            weatherCode: "",
           ),
           daily: Daily(
             time: [],
             temperature2mMax: [],
             temperature2mMin: [],
+            weatherCode: [],
           ),
           current: Current(
             time: "20:00",
