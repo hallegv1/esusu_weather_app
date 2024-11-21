@@ -132,6 +132,21 @@ class _WeatherViewState extends State<WeatherView> {
     return DateFormat(format).format(dateTime);
   }
 
+  Color _getBaseColor({
+    required int weatherCode,
+  }) {
+    if (weatherCode < 3) return Colors.lightBlue;
+    if (weatherCode >= 3 && weatherCode < 62) return Colors.blueGrey;
+    return Colors.black;
+  }
+
+  Color _getAccentColor({
+    required int weatherCode,
+  }) {
+    if (weatherCode < 3) return Colors.yellow;
+    return Colors.grey;
+  }
+
   PreferredSizeWidget _appBar() => AppBar(
         backgroundColor: Colors.transparent,
         systemOverlayStyle:
@@ -161,21 +176,6 @@ class _WeatherViewState extends State<WeatherView> {
           ),
         ),
       );
-
-  Color _getBaseColor({
-    required int weatherCode,
-  }) {
-    if (weatherCode < 3) return Colors.lightBlue;
-    if (weatherCode >= 3 && weatherCode < 62) return Colors.blueGrey;
-    return Colors.black;
-  }
-
-  Color _getAccentColor({
-    required int weatherCode,
-  }) {
-    if (weatherCode < 3) return Colors.yellow;
-    return Colors.grey;
-  }
 
   List<Widget> _gradientBackgroundItems({
     required int weatherCode,
