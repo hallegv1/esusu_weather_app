@@ -13,4 +13,11 @@ Download APK file from Releases section on the right sidebar
 
 ### Build app with IDE
 
-Clone this repo and run the project with your IDE and device of choice. This option allows you to build the app to iOS if desired.
+Clone this repository and run the project with your IDE and device of choice. This option allows you to build the app to iOS if desired.
+
+## Test Instructions
+
+1. Download this repository and open with your IDE of choice.
+2. Run `flutter test` to run all tests.
+
+### Note: You might _not_ have the required packages installed for this app after cloning the repository to build and test it. If so, run `flutter pub get` to retrieve the necessary packages.
