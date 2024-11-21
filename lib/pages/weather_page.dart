@@ -464,6 +464,23 @@ class _WeatherViewState extends State<WeatherView> {
         ),
       );
 
+  Widget _loadingView() => const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            Text(
+              "Fetching weather data...",
+              style: TextStyle(
+                fontSize: 40,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final backgroundColor =
@@ -486,7 +503,7 @@ class _WeatherViewState extends State<WeatherView> {
               ..._gradientBackgroundItems(
                 weatherCode: widget.weather?.current.weatherCode ?? 2,
               ),
-              if (widget.isLoading) const CircularProgressIndicator(),
+              if (widget.isLoading) _loadingView(),
               if (widget.weather != null)
                 SingleChildScrollView(
                   child: Column(
