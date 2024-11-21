@@ -247,6 +247,13 @@ class _WeatherViewState extends State<WeatherView> {
               latitude = pickedData.latLong.latitude;
               longitude = pickedData.latLong.longitude;
             });
+
+            context.read<WeatherBloc>().add(
+                  FetchWeather(
+                    latitude: latitude,
+                    longitude: longitude,
+                  ),
+                );
           },
         ),
       );
